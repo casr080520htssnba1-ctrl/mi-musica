@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MONO_Player v2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #000000;
+    --bg-surface: #0a0a0a;
+    --bg-card: #141414;
+    --border-subtle: #222222;
+    --text-primary: #ffffff;
+    --text-secondary: #888888;
+    --accent-electric: #ff1e1e; /* Rojo Neón Eléctrico */
+    --accent-glow: rgba(255, 30, 30, 0.3);
+    
+    /* Fuentes */
+    --font-main: 'Geologica', sans-serif;
+    --font-head: 'Space Grotesk', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+
+  body {
+    font-family: var(--font-main);
+    background-color: var(--bg-deep);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── NAVEGACIÓN SUPERIOR MINIMALISTA ── */
+  header {
+    padding: 15px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+
+  .brand {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.5px;
+    text-transform: uppercase;
+  }
+  .brand span { color: var(--accent-electric); text-shadow: 0 0 10px var(--accent-glow); }
+
+  .status-tag {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border: 1px solid var(--border-subtle);
+    padding: 4px 12px;
+    border-radius: 2px;
+  }
+
+  /* ── ÁREA PRINCIPAL: GRId DE CANCIONES ── */
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px 40px 150px; /* Padding inferior extra para el reproductor flotante */
+    scroll-behavior: smooth;
+  }
+
+  .main-content::-webkit-scrollbar { width: 6px; }
+  .main-content::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+
+  .section-header {
+    margin-bottom: 30px;
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+  }
+
+  .section-title {
+    font-family: var(--font-head);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+
+  .song-counter {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  /* DISEÑO DE TARJETAS EN GRID */
+  #songList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .song-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .song-card:hover {
+    border-color: #333;
+    transform: translateY(-5px);
+    background-color: #1a1a1a;
+  }
+
+  /* Estado Activo (Sonando) */
+  .song-card.active {
+    border-color: var(--accent-electric);
+    box-shadow: 0 10px 30px rgba(255, 30, 30, 0.1);
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .card-index {
+    font-family: var(--font-head);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #222; /* Color muy sutil por defecto */
+    transition: color 0.3s;
+  }
+  
+  .song-card.active .card-index {
+    color: var(--accent-electric);
+  }
+
+  .card-emoji {
+    font-size: 1.2rem;
+    opacity: 0.6;
+  }
+
+  .card-info { flex: 1; }
+
+  .card-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-meta {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .card-duration {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    align-self: flex-end;
+  }
+
+  /* INDICADOR DE REPRODUCCIÓN (ONDAS) */
+  .playing-bars {
+    display: none;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    gap: 2px;
+    height: 15px;
+    align-items: flex-end;
+  }
+
+  .song-card.active.playing .playing-bars { display: flex; }
+  .song-card.active.playing .card-duration { visibility: hidden; }
+
+  .bar {
+    width: 2px;
+    background-color: var(--accent-electric);
+    animation: barGrow 0.5s ease-in-out infinite alternate;
+    border-radius: 1px;
+  }
+  @keyframes barGrow { 0% { height: 3px; } 100% { height: 15px; } }
+
+  /* ── REPRODUCTOR FLOTANTE INFERIOR (ULTRA-MINIMAL) ── */
+  .player-bar {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1000px;
+    background: rgba(15, 15, 15, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid #222;
+    border-radius: 8px;
+    padding: 15px 25px;
+    display: grid;
+    grid-template-columns: 200px 1fr 180px;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    z-index: 1000;
+  }
+
+  /* Info de canción en barra */
+  .pb-info { display: flex; align-items: center; gap: 15px; }
+  .pb-emoji { font-size: 1.5rem; }
+  .pb-meta { overflow: hidden; }
+  .pb-title { font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pb-track-num { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; }
+
+  /* Controles Centrales */
+  .pb-controls-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .pb-btns { display: flex; align-items: center; gap: 15px; }
+  
+  .control-btn {
+    background: none; border: none;
+    color: var(--text-secondary); cursor: pointer;
+    font-size: 0.9rem; transition: all 0.2s;
+    padding: 5px;
+  }
+  .control-btn:hover { color: var(--text-primary); transform: scale(1.1); }
+  .control-btn.active-mode { color: var(--accent-electric); text-shadow: 0 0 8px var(--accent-glow); }
+
+  .play-pause-btn {
+    width: 45px; height: 45px;
+    background-color: var(--text-primary);
+    color: var(--bg-deep);
+    border: none; border-radius: 50%;
+    font-size: 1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .play-pause-btn:hover { background-color: var(--accent-electric); color: white; transform: scale(1.05); }
+
+  /* Barra de Progreso Minimalista */
+  .progress-container {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .time-display { font-size: 0.7rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; width: 35px; text-align: center;}
+
+  .seek-slider {
+    flex: 1; height: 3px;
+    -webkit-appearance: none; background: #222;
+    border-radius: 2px; cursor: pointer;
+    position: relative;
+  }
+  .seek-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 0; height: 0; /* Oculto por defecto */
+  }
+  .seek-slider:hover::-webkit-slider-thumb {
+    width: 10px; height: 10px; background: var(--accent-electric); border-radius: 50%;
+  }
+
+  /* Controles de Volumen (Derecha) */
+  .pb-volume { display: flex; align-items: center; gap: 10px; justify-content: flex-end;}
+  .vol-icon { font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;}
+  .vol-slider {
+    width: 80px; height: 3px;
+    -webkit-appearance: none; background: #222;
+    border-radius: 2px; cursor: pointer;
+  }
+  .vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 8px; height: 8px; background: var(--text-secondary); border-radius: 50%;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .player-bar { grid-template-columns: 1fr; grid-template-rows: auto auto auto; bottom: 0; width: 100%; border-radius: 8px 8px 0 0; left: 50%; transform: translateX(-50%); padding: 15px;}
+    .pb-info { justify-content: center; }
+    .pb-volume { display: none; }
+    #songList { grid-template-columns: 1fr; }
+    .main-content { padding: 20px 20px 180px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">MONO_<span>PLAYER</span></div>
+  <div class="status-tag">Local_Library / v2.0</div>
+</header>
+
+<div class="main-content">
+  <div class="section-header">
+    <h1 class="section-title">Tracks</h1>
+    <span class="song-counter">21 archivos cargados</span>
+  </div>
+
+  <div id="songList"></div>
+</div>
+
+<div class="player-bar" id="playerBar">
+  
+  <div class="pb-info">
+    <div class="pb-emoji" id="pbEmoji">🎛️</div>
+    <div class="pb-meta">
+      <div class="pb-title" id="pbTitle">Esperando selección</div>
+      <div class="pb-track-num" id="pbNum">Standby</div>
+    </div>
+  </div>
+
+  <div class="pb-controls-wrapper">
+    <div class="pb-btns">
+      <button class="control-btn" id="btnShuffle" title="Aleatorio">🔀</button>
+      <button class="control-btn" id="btnPrev">⏮</button>
+      <button class="play-pause-btn" id="btnPlay">▶</button>
+      <button class="control-btn" id="btnNext">⏭</button>
+      <button class="control-btn" id="btnRepeat" title="Repetir">🔁</button>
+    </div>
+    
+    <div class="progress-container">
+      <span class="time-display" id="curT">0:00</span>
+      <input type="range" class="seek-slider" id="seekBar" min="0" max="100" value="0">
+      <span class="time-display" id="durT">0:00</span>
+    </div>
+  </div>
+
+  <div class="pb-volume">
+    <span class="vol-icon" id="volIcon">🔊</span>
+    <input type="range" class="vol-slider" id="volBar" min="0" max="100" value="85">
+  </div>
+</div>
+
+<audio id="audio"></audio>
+
+<script>
+// TUS CANCIONES SIGUEN AQUÍ, INTACTAS
+const SONGS = [
+  { name: "Oye Mujer", file: "002 RayMix   Oye Mujer [Video Oficial].mp3", emoji: "🎵" },
+  { name: "Despues de Ti", file: "006 DESPUES DE TI, QUIEN_.mp3", emoji: "🎸" },
+  { name: "Hombre Libre", file: "007 HOMBRE LIBRE.mp3", emoji: "🔥" },
+  { name: "La Risa", file: "008 LA RISA DE TU CARA.mp3", emoji: "🎶" },
+  { name: "Mis Sentimientos", file: "008 Mis Sentimientos (feat. Ximena Sa.mp3", emoji: "⚡" },
+  { name: "Disfrute engañarte", file: "009 DISFRUTE ENGAÑARTE.mp3", emoji: "🎹" },
+  { name: "El general", file: "12.-   EL GENERAL - gerardo ortiz.mp3", emoji: "🎤" },
+  { name: "Gano Holanda", file: "14.- GANO HOLANDA, PERDIO CHINA - calibre 50.mp3", emoji: "💿" },
+  { name: "Aguanta Corazon", file: "25 aguanta corazon - los invasores de nuevo leon.mp3", emoji: "🎺" },
+  { name: "Hermosa Experiencia", file: "026 HERMOSA EXPERIENCIA.mp3", emoji: "🎻" },
+  { name: "No hay Novedad", file: "26 no hay novedad - cadetes.mp3", emoji: "🥁" },
+  { name: "Se quedaron a 3 pasos", file: "30.- SE QUEDARON A TRES PASOS - calibre 50.mp3", emoji: "🎷" },
+  { name: "Mi Razon de Ser", file: "031 MI RAZON DE SER.mp3", emoji: "🌊" },
+  { name: "Mi ultimo Deseo", file: "31.- MI ULTIMO DESEO - banda recoditos.mp3", emoji: "🌙" },
+  { name: "Pongamonos de Acuerdo", file: "063 PONGAMONOS DE ACUERDO.mp3", emoji: "☀️" },
+  { name: "Te hubieras ido antes", file: "075 TE HUBIERAS IDO ANTES.mp3", emoji: "🎯" },
+  { name: "Tatuajes", file: "090 TATUAJES.mp3", emoji: "🚀" },
+  { name: "El Karma", file: "114 EL KARMA.mp3", emoji: "💫" },
+  { name: "El toro Encartado", file: "118 EL TORO ENCARTADO.mp3", emoji: "🎭" },
+  { name: "La Vida Ruina", file: "121 LA VIDA RUINA feat. Marca Regist.mp3", emoji: "🌈" },
+  { name: "Vas a Llorar por mi", file: "186 VAS A LLORAR POR MI.mp3", emoji: "❤️" },
+];
+
+// LÓGICA CORE (Mantenida, solo cambiados los IDs de referencia visual)
+const audio = document.getElementById('audio');
+const songList = document.getElementById('songList');
+const btnPlay = document.getElementById('btnPlay');
+const btnPrev = document.getElementById('btnPrev');
+const btnNext = document.getElementById('btnNext');
+const btnShuffle = document.getElementById('btnShuffle');
+const btnRepeat = document.getElementById('btnRepeat');
+const seekBar = document.getElementById('seekBar');
+const volBar = document.getElementById('volBar');
+const pbTitle = document.getElementById('pbTitle');
+const pbNum = document.getElementById('pbNum');
+const pbEmoji = document.getElementById('pbEmoji');
+
+let current = -1;
+let playing = false;
+let shuffle = false;
+let repeat = 0; // 0: off, 1: all, 2: one
+const durs = new Array(SONGS.length).fill(0);
+
+// NUEVO RENDER EN FORMA DE TARJETAS (GRId)
+function render() {
+  songList.innerHTML = '';
+  SONGS.forEach((s, i) => {
+    const card = document.createElement('div');
+    // Clases dinámicas para estado activo y tocando
+    card.className = 'song-card' + (i===current?' active':'') + (i===current&&playing?' playing':'');
+    
+    card.innerHTML = `
+      <div class="card-top">
+        <span class="card-index">${String(i+1).padStart(2, '0')}</span>
+        <span class="card-emoji">${s.emoji}</span>
+      </div>
+      <div class="card-info">
+        <div class="card-title">${s.name}</div>
+        <div class="card-meta">Pista Local</div>
+      </div>
+      <div class="card-duration">${durs[i] ? fmt(durs[i]) : '--:--'}</div>
+      <div class="playing-bars">
+        <div class="bar" style="animation-delay: 0.1s"></div>
+        <div class="bar" style="animation-delay: 0.3s"></div>
+        <div class="bar" style="animation-delay: 0.2s"></div>
+      </div>
+    `;
+    card.addEventListener('click', () => load(i, true));
+    songList.appendChild(card);
+  });
+}
+
+// Cargar Canción y Actualizar Barra Flotante
+function load(i, autoplay=false) {
+  current = i;
+  const s = SONGS[i];
+  audio.src = s.file;
+  pbTitle.textContent = s.name;
+  pbNum.textContent = `TRACK ${i+1} / ${SONGS.length}`;
+  pbEmoji.textContent = s.emoji;
+  
+  if (autoplay) {
+    audio.play().then(()=>{ 
+      playing=true; 
+      btnPlay.textContent='⏸'; 
+      render(); 
+    }).catch(() => { render(); });
+  } else {
+    render();
+  }
+}
+
+// Play/Pause
+btnPlay.addEventListener('click', () => {
+  if (current === -1) { load(rnd(), true); return; } // Si no hay nada, empieza una aleatoria
+  if (playing) { 
+    audio.pause(); 
+    playing=false; 
+    btnPlay.textContent='▶'; 
+  } else { 
+    audio.play(); 
+    playing=true; 
+    btnPlay.textContent='⏸'; 
+  }
+  render(); // Actualiza las tarjetas para mostrar/ocultar barras de animación
+});
+
+// Siguiente/Anterior
+function nextSong() {
+  if (repeat===2) { audio.currentTime=0; audio.play(); return; } // Repetir una
+  let idx = shuffle ? rnd() : (current+1) % SONGS.length;
+  // Si es la última y no hay repeat all ni shuffle, para.
+  if (idx===0 && !shuffle && repeat===0) { 
+    audio.pause(); playing=false; btnPlay.textContent='▶'; render(); return; 
+  }
+  load(idx, true);
+}
+
+btnNext.addEventListener('click', nextSong);
+btnPrev.addEventListener('click', () => {
+  if (audio.currentTime > 3) { audio.currentTime = 0; return; } // Reinicia canción si lleva más de 3s
+  let idx = (current-1+SONGS.length) % SONGS.length;
+  load(idx, true);
+});
+
+audio.addEventListener('ended', nextSong);
+
+function rnd() { 
+  if (SONGS.length <= 1) return 0;
+  let n; 
+  do { n = Math.floor(Math.random()*SONGS.length); } while(n === current); 
+  return n; 
+}
+
+// Progreso
+audio.addEventListener('timeupdate', () => {
+  if (!audio.duration) return;
+  const p = (audio.currentTime / audio.duration) * 100;
+  seekBar.value = p;
+  document.getElementById('curT').textContent = fmt(audio.currentTime);
+});
+
+audio.addEventListener('loadedmetadata', () => {
+  document.getElementById('durT').textContent = fmt(audio.duration);
+  durs[current] = audio.duration; // Guarda duración para la tarjeta
+  render();
+});
+
+seekBar.addEventListener('input', () => {
+  if (audio.duration) audio.currentTime = (seekBar.value/100) * audio.duration;
+});
+
+// Volumen
+volBar.addEventListener('input', () => {
+  audio.volume = volBar.value/100;
+  volIcon.textContent = volBar.value == 0 ? '🔇' : '🔊';
+});
+
+// Modos (Shuffle/Repeat)
+btnShuffle.addEventListener('click', () => {
+  shuffle = !shuffle;
+  btnShuffle.classList.toggle('active-mode', shuffle);
+});
+
+btnRepeat.addEventListener('click', () => {
+  repeat = (repeat+1)%3;
+  btnRepeat.textContent = repeat===2 ? '🔂' : '🔁';
+  btnRepeat.classList.toggle('active-mode', repeat>0);
+});
+
+// Util: Formato tiempo
+function fmt(s) {
+  if(!s || isNaN(s)) return '0:00';
+  const m = Math.floor(s/60);
+  const sec = Math.floor(s%60);
+  return `${m}:${sec<10?'0':''}${sec}`;
+}
+
+// Inicializar
+render();
+</script>
+</body>
+</html>
