@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Play Beat</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c14;
+  --card: #0f1520;
+  --card2: #161f30;
+  --accent: #00d4ff;
+  --accent2: #7b5ea7;
+  --green: #1db954;
+  --text: #e8f0fe;
+  --muted: #5a6a85;
+  --border: #1e2d45;
+  --glow: rgba(0,212,255,0.2);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse 80% 50% at 20% 0%, rgba(0,212,255,0.06) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 40% at 80% 100%, rgba(123,94,167,0.07) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+.section { display: none; min-height: 100vh; position: relative; z-index: 1; }
+.section.active { display: block; }
+#menuSection.active { display: flex; }
+ 
+/* ── MENÚ ── */
+#menuSection {
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px; min-height: 100vh;
+}
+.menu-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.2rem; letter-spacing: -1px; margin-bottom: 6px; text-align: center; }
+.menu-logo span { color: var(--accent); }
+.menu-sub { color: var(--muted); font-size: .8rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 40px; text-align: center; }
+.menu-grid { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 380px; }
+.menu-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+  padding: 20px 22px; display: flex; align-items: center; gap: 18px;
+  cursor: pointer; transition: border-color .2s, transform .15s; position: relative; overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+}
+.menu-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(0,212,255,0.04) 0%, transparent 60%);
+  opacity: 0; transition: opacity .2s;
+}
+.menu-card:active { transform: scale(.97); border-color: rgba(0,212,255,0.4); }
+.menu-card:active::before { opacity: 1; }
+.menu-icon { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+.menu-icon.music { background: rgba(0,212,255,0.12); }
+.menu-icon.game  { background: rgba(123,94,167,0.18); }
+.menu-icon.quiz  { background: rgba(29,185,84,0.14); }
+.menu-card-info { flex: 1; }
+.menu-card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+.menu-card-desc { font-size: .75rem; color: var(--muted); line-height: 1.5; }
+.menu-arrow { font-size: 1.1rem; color: var(--muted); }
+ 
+/* ── HEADER COMÚN ── */
+.sec-header {
+  padding: 14px 18px; display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--border); backdrop-filter: blur(10px);
+  position: sticky; top: 0; background: rgba(8,12,20,0.92); z-index: 10;
+}
+.back-btn {
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text);
+  font-size: .82rem; padding: 8px 14px; border-radius: 99px;
+  cursor: pointer; transition: background .2s; display: flex; align-items: center; gap: 6px;
+  -webkit-user-select: none; user-select: none; min-height: 40px;
+}
+.back-btn:active { background: rgba(255,255,255,0.09); }
+.sec-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
+ 
+/* ── MÚSICA ── */
+.music-app {
+  display: grid; grid-template-columns: 1fr 300px;
+  gap: 0; min-height: calc(100vh - 57px);
+}
+.song-list-wrap { overflow-y: auto; padding: 16px 0 120px; }
+.list-header { padding: 0 20px 12px; display: flex; align-items: center; justify-content: space-between; }
+.list-title { font-family: 'Syne', sans-serif; font-size: .68rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+.total-badge { font-size: .68rem; color: var(--accent); background: rgba(0,212,255,0.1); padding: 3px 10px; border-radius: 99px; border: 1px solid rgba(0,212,255,0.2); }
+.song-item { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 0; padding: 12px 20px 12px 14px; cursor: pointer; transition: background .18s; border-left: 3px solid transparent; min-height: 60px; }
+.song-item:active { background: rgba(255,255,255,0.03); }
+.song-item.active { background: rgba(0,212,255,0.05); border-left-color: var(--accent); }
+.song-num { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: .78rem; color: var(--muted); font-weight: 500; flex-shrink: 0; }
+.song-item.active .song-num { color: var(--accent); }
+.mini-bars { display: none; gap: 2px; align-items: flex-end; height: 16px; }
+.song-item.playing .mini-bars { display: flex; }
+.song-item.playing .num-txt { display: none; }
+.mb { width: 3px; border-radius: 1px; background: var(--accent); animation: mb .7s ease-in-out infinite; }
+.mb:nth-child(2) { animation-delay:.2s; }
+.mb:nth-child(3) { animation-delay:.1s; }
+@keyframes mb { 0%,100%{height:3px} 50%{height:14px} }
+.song-info { padding: 0 10px; overflow: hidden; }
+.song-name { font-size: .88rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-item.active .song-name { color: var(--accent); }
+.song-sub { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+.song-dur { font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.np-panel {
+  background: var(--card); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 28px 20px 24px; gap: 16px;
+  position: sticky; top: 57px; height: calc(100vh - 57px); overflow-y: auto;
+}
+.art-wrap {
+  width: 190px; height: 190px; border-radius: 20px;
+  background: linear-gradient(135deg, var(--card2), #1a2540);
+  display: flex; align-items: center; justify-content: center; font-size: 5rem;
+  position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px var(--border); overflow: hidden; flex-shrink: 0;
+}
+.art-wrap::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 30%, rgba(0,212,255,0.12), transparent 60%); }
+.art-emoji { position: relative; z-index: 1; transition: transform .3s; }
+.art-wrap.pulse .art-emoji { animation: artPulse 2s ease-in-out infinite; }
+@keyframes artPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+.np-name { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700; text-align: center; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.np-track-num { font-size: .72rem; color: var(--muted); }
+.prog-wrap { width: 100%; }
+.time-row { display: flex; justify-content: space-between; font-size: .7rem; color: var(--muted); margin-bottom: 8px; }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--border); border-radius: 2px; outline: none; cursor: pointer; }
+input[type=range].filled { background: linear-gradient(to right, var(--accent) var(--v,0%), var(--border) var(--v,0%)); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 8px var(--glow); }
+.controls { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.cbtn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 10px; border-radius: 50%; transition: color .2s, background .2s; line-height: 1; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+.cbtn:active { color: var(--text); background: rgba(255,255,255,0.06); }
+.cbtn.on { color: var(--accent); }
+.playbtn { width: 56px; height: 56px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer; font-size: 1.3rem; color: #000; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 24px rgba(0,212,255,0.4); transition: transform .15s; font-weight: bold; }
+.playbtn:active { transform: scale(.93); }
+.vol-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+.vol-icon { font-size: .95rem; cursor: pointer; color: var(--muted); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+.mode-lbl { font-size: .66rem; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; min-height: 14px; text-align: center; }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+ 
+/* ── MÚSICA MÓVIL ── */
+@media (max-width: 640px) {
+  .music-app { grid-template-columns: 1fr; }
+  .np-panel {
+    position: fixed; bottom: 0; left: 0; right: 0; height: auto;
+    flex-direction: row; padding: 10px 14px; gap: 12px;
+    border-left: none; border-top: 1px solid var(--border);
+    backdrop-filter: blur(20px); background: rgba(15,21,32,0.97); z-index: 100;
+    overflow: visible; align-items: center;
+  }
+  .art-wrap { width: 44px; height: 44px; font-size: 1.4rem; border-radius: 8px; flex-shrink: 0; }
+  .np-name { font-size: .82rem; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+  .np-track-num, .prog-wrap, .vol-row, .mode-lbl { display: none; }
+  .controls { gap: 6px; }
+  .cbtn { font-size: .9rem; padding: 8px; min-width: 40px; min-height: 40px; }
+  .playbtn { width: 42px; height: 42px; font-size: 1rem; }
+  .song-list-wrap { padding-bottom: 80px; }
+  .np-info-mob { flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+  .np-panel > .np-info { display: flex; flex-direction: column; gap: 2px; flex: 1; overflow: hidden; }
+}
+ 
+/* ══════════════════════════════════════
+   JUEGO — CONECTA LA CANCIÓN
+   Empareja fragmento de letra con título
+══════════════════════════════════════ */
+.game-body {
+  padding: 16px 16px 32px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+ 
+/* Barra superior */
+.g-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px; flex-wrap: wrap; gap: 8px;
+}
+.g-score {
+  background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.22);
+  color: var(--accent); font-size: .8rem; font-weight: 600;
+  padding: 6px 16px; border-radius: 99px;
+}
+.g-timer-ring {
+  position: relative; width: 44px; height: 44px;
+}
+.g-timer-ring svg { transform: rotate(-90deg); }
+.g-timer-ring circle { transition: stroke-dashoffset .9s linear; }
+.g-timer-num {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; font-size: .75rem; font-weight: 700; color: var(--accent);
+}
+.g-round { font-size: .7rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+ 
+/* Fragmento de letra */
+.g-lyric-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; padding: 22px 20px; margin-bottom: 18px;
+  text-align: center; position: relative; overflow: hidden;
+}
+.g-lyric-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+.g-lyric-label {
+  font-size: .65rem; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.g-lyric-text {
+  font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700;
+  line-height: 1.5; color: var(--text);
+}
+.g-hint {
+  font-size: .72rem; color: var(--muted); margin-top: 8px;
+}
+ 
+/* Opciones */
+.g-options {
+  display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;
+}
+.g-opt {
+  background: var(--card2); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 15px 18px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; transition: border-color .18s, background .18s, transform .12s;
+  -webkit-user-select: none; user-select: none;
+  min-height: 54px; text-align: left;
+}
+.g-opt:active:not(.locked) { transform: scale(.97); }
+.g-opt .g-opt-letter {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; flex-shrink: 0;
+  transition: background .18s, border-color .18s; color: var(--muted);
+}
+.g-opt .g-opt-text { font-size: .88rem; font-weight: 500; color: var(--text); line-height: 1.3; }
+.g-opt:not(.locked):hover { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.04); }
+.g-opt.correct {
+  border-color: var(--green); background: rgba(29,185,84,0.1);
+  animation: popIn .25s ease;
+}
+.g-opt.correct .g-opt-letter { background: rgba(29,185,84,0.25); border-color: var(--green); color: var(--green); }
+.g-opt.correct .g-opt-text { color: var(--green); }
+.g-opt.wrong {
+  border-color: #e06060; background: rgba(224,96,96,0.08);
+  animation: shake .3s ease;
+}
+.g-opt.wrong .g-opt-letter { background: rgba(224,96,96,0.2); border-color: #e06060; color: #e06060; }
+.g-opt.wrong .g-opt-text { color: #e06060; }
+.g-opt.locked { cursor: default; }
+@keyframes popIn { 0%{transform:scale(.95)} 60%{transform:scale(1.04)} 100%{transform:scale(1)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+ 
+/* Retroalimentación */
+.g-feedback {
+  border-radius: 12px; padding: 13px 16px;
+  font-size: .84rem; line-height: 1.5;
+  border: 1px solid transparent; min-height: 48px;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.g-feedback.correct { background: rgba(29,185,84,0.1); border-color: rgba(29,185,84,0.22); color: #5de099; }
+.g-feedback.wrong   { background: rgba(224,96,96,0.1);  border-color: rgba(224,96,96,0.22);  color: #e08080; }
+.g-feedback.hidden  { display: none; }
+ 
+/* Botón siguiente */
+.g-next-btn {
+  display: block; width: 100%;
+  background: var(--accent); border: none; border-radius: 13px;
+  color: #000; font-weight: 700; font-size: .95rem;
+  padding: 15px; cursor: pointer; min-height: 52px;
+  transition: opacity .2s, transform .15s;
+}
+.g-next-btn:active { opacity: .85; transform: scale(.98); }
+.g-next-btn.hidden { display: none; }
+ 
+/* Racha */
+.g-streak {
+  text-align: center; font-size: .7rem; color: var(--muted);
+  letter-spacing: 1px; margin-bottom: 4px; min-height: 16px;
+}
+ 
+/* ── Pantalla de fin de juego ── */
+.g-over {
+  text-align: center; padding: 28px 16px;
+}
+.g-over-title { font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800; margin-bottom: 6px; }
+.g-stars { font-size: 2rem; margin: 16px 0 8px; letter-spacing: 6px; }
+.g-over-score { font-size: 3.5rem; color: var(--accent); font-family: 'Syne', sans-serif; font-weight: 800; line-height: 1; }
+.g-over-label { font-size: .78rem; color: var(--muted); margin: 4px 0 6px; }
+.g-over-detail { font-size: .82rem; color: var(--muted); margin-bottom: 24px; }
+.g-over-msg { font-size: 1rem; margin-bottom: 20px; }
+.g-restart-btn {
+  background: var(--card2); border: 1px solid var(--border); color: var(--text);
+  padding: 13px 32px; border-radius: 12px; font-size: .9rem; cursor: pointer;
+  min-height: 50px; transition: border-color .2s;
+}
+.g-restart-btn:active { border-color: var(--accent); }
+ 
+/* Barra de progreso de rondas */
+.g-progress-bar {
+  height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 16px; overflow: hidden;
+}
+.g-progress-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px; transition: width .4s ease;
+}
+ 
+/* ── QUIZ ── */
+.quiz-body { padding: 18px 16px; max-width: 480px; margin: 0 auto; }
+.quiz-progress-wrap { margin-bottom: 18px; }
+.quiz-progress-row { display: flex; justify-content: space-between; font-size: .73rem; color: var(--muted); margin-bottom: 8px; }
+.quiz-bar-bg { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.quiz-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s ease; }
+.quiz-score-pill { background: rgba(29,185,84,0.12); border: 1px solid rgba(29,185,84,0.25); color: var(--green); font-size: .75rem; font-weight: 600; padding: 4px 14px; border-radius: 99px; }
+.quiz-question-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 24px 20px; margin-bottom: 14px; }
+.quiz-q-num { font-size: .68rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.quiz-q-emoji { font-size: 2rem; display: block; margin-bottom: 10px; }
+.quiz-q-text { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; line-height: 1.4; }
+.quiz-options { display: flex; flex-direction: column; gap: 10px; }
+.quiz-opt {
+  background: var(--card2); border: 1px solid var(--border); border-radius: 13px;
+  padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px;
+  transition: border-color .2s, background .2s; font-size: .88rem; text-align: left; color: var(--text);
+  -webkit-user-select: none; user-select: none; min-height: 52px;
+}
+.quiz-opt:active:not(.disabled) { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.05); }
+.quiz-opt .opt-letter {
+  width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; flex-shrink: 0; transition: background .2s, border-color .2s;
+}
+.quiz-opt.correct { border-color: var(--green); background: rgba(29,185,84,0.1); }
+.quiz-opt.correct .opt-letter { background: rgba(29,185,84,0.3); border-color: var(--green); color: var(--green); }
+.quiz-opt.wrong { border-color: #e06060; background: rgba(224,96,96,0.08); }
+.quiz-opt.wrong .opt-letter { background: rgba(224,96,96,0.25); border-color: #e06060; color: #e06060; }
+.quiz-opt.disabled { cursor: default; }
+.quiz-feedback {
+  padding: 12px 16px; border-radius: 12px; font-size: .84rem; margin-top: 8px;
+  display: flex; align-items: flex-start; gap: 10px; border: 1px solid transparent; line-height: 1.5;
+}
+.quiz-feedback.correct { background: rgba(29,185,84,0.1); border-color: rgba(29,185,84,0.2); color: #5de099; }
+.quiz-feedback.wrong   { background: rgba(224,96,96,0.1); border-color: rgba(224,96,96,0.2); color: #e08080; }
+.quiz-next-btn {
+  display: block; width: 100%; margin-top: 12px;
+  background: var(--accent); border: none; border-radius: 12px;
+  color: #000; font-weight: 700; font-size: .95rem; padding: 14px; cursor: pointer;
+  min-height: 52px; transition: opacity .2s;
+}
+.quiz-next-btn:active { opacity: .85; }
+.quiz-results { text-align: center; padding: 24px 16px; }
+.quiz-results-title { font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800; margin-bottom: 6px; }
+.quiz-results-score { font-size: 3.8rem; font-weight: 800; font-family: 'Syne', sans-serif; color: var(--accent); margin: 14px 0 4px; }
+.quiz-results-total { color: var(--muted); font-size: .88rem; margin-bottom: 14px; }
+.quiz-rank { font-size: .95rem; margin-bottom: 26px; padding: 10px 20px; display: inline-block; border-radius: 99px; border: 1px solid var(--border); background: var(--card2); }
+.quiz-restart-btn { background: var(--card2); border: 1px solid var(--border); color: var(--text); padding: 12px 32px; border-radius: 12px; font-size: .9rem; cursor: pointer; min-height: 50px; }
+.quiz-restart-btn:active { border-color: var(--accent); }
+</style>
+</head>
+<body>
+ 
+<!-- ═══ MENÚ ═══ -->
+<div id="menuSection" class="section active">
+  <div class="menu-logo">PLAY <span>BEAT</span></div>
+  <div class="menu-sub">Elige tu diversión</div>
+  <div class="menu-grid">
+    <div class="menu-card" onclick="showSection('musicSection')">
+      <div class="menu-icon music">🎵</div>
+      <div class="menu-card-info">
+        <div class="menu-card-title">Mi Música</div>
+        <div class="menu-card-desc">21 canciones · reproductor completo con controles y modo aleatorio</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </div>
+    <div class="menu-card" onclick="showSection('gameSection')">
+      <div class="menu-icon game">🎮</div>
+      <div class="menu-card-info">
+        <div class="menu-card-title">¿De quién es esta canción?</div>
+        <div class="menu-card-desc">Lee el fragmento de letra y elige el título correcto · cronómetro y rachas</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </div>
+    <div class="menu-card" onclick="showSection('quizSection')">
+      <div class="menu-icon quiz">🎤</div>
+      <div class="menu-card-info">
+        <div class="menu-card-title">Quiz Musical</div>
+        <div class="menu-card-desc">10 preguntas de música mexicana moderna · suma puntos</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </div>
+  </div>
+</div>
+ 
+<!-- ═══ MÚSICA ═══ -->
+<div id="musicSection" class="section">
+  <div class="sec-header">
+    <button class="back-btn" onclick="showSection('menuSection')">← Menú</button>
+    <div class="sec-title">🎵 Mi Música</div>
+  </div>
+  <div class="music-app">
+    <div class="song-list-wrap">
+      <div class="list-header">
+        <div class="list-title">Lista de reproducción</div>
+        <div class="total-badge">21 canciones</div>
+      </div>
+      <div id="songList"></div>
+    </div>
+    <div class="np-panel" id="npPanel">
+      <div class="art-wrap" id="artWrap">
+        <div class="art-emoji" id="artEmoji">🎵</div>
+      </div>
+      <div class="np-info" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div class="np-name" id="npName">Selecciona una canción</div>
+        <div class="np-track-num" id="npNum">—</div>
+      </div>
+      <div class="prog-wrap">
+        <div class="time-row"><span id="curT">0:00</span><span id="durT">0:00</span></div>
+        <input type="range" class="filled" id="seekBar" min="0" max="100" value="0" style="--v:0%">
+      </div>
+      <div class="controls">
+        <button class="cbtn" id="btnShuffle" title="Aleatorio">🔀</button>
+        <button class="cbtn" id="btnPrev">⏮</button>
+        <button class="playbtn" id="btnPlay">▶</button>
+        <button class="cbtn" id="btnNext">⏭</button>
+        <button class="cbtn" id="btnRepeat">🔁</button>
+      </div>
+      <div class="mode-lbl" id="modeLbl"></div>
+      <div class="vol-row">
+        <span class="vol-icon" id="volIcon">🔊</span>
+        <input type="range" class="filled" id="volBar" min="0" max="100" value="85" style="--v:85%">
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<!-- ═══ JUEGO ═══ -->
+<div id="gameSection" class="section">
+  <div class="sec-header">
+    <button class="back-btn" onclick="showSection('menuSection')">← Menú</button>
+    <div class="sec-title">🎮 ¿De quién es esta canción?</div>
+  </div>
+  <div class="game-body" id="gameBody"></div>
+</div>
+ 
+<!-- ═══ QUIZ ═══ -->
+<div id="quizSection" class="section">
+  <div class="sec-header">
+    <button class="back-btn" onclick="showSection('menuSection')">← Menú</button>
+    <div class="sec-title">🎤 Quiz Musical</div>
+  </div>
+  <div class="quiz-body" id="quizBody"></div>
+</div>
+ 
+<audio id="audio"></audio>
+ 
+<script>
+/* ══ NAVEGACIÓN ══ */
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  if (id === 'gameSection') initGame();
+  if (id === 'quizSection') initQuiz();
+}
+ 
+/* ══════════════════════════════
+   REPRODUCTOR DE MÚSICA
+══════════════════════════════ */
+var SONGS = [
+  { name: "Oye Mujer",              file: "002 RayMix   Oye Mujer [Video Oficial].mp3",          emoji: "🎵" },
+  { name: "Despues de Ti",          file: "006 DESPUES DE TI, QUIEN_.mp3",                        emoji: "🎸" },
+  { name: "Hombre Libre",           file: "007 HOMBRE LIBRE.mp3",                                 emoji: "🔥" },
+  { name: "La Risa",                file: "008 LA RISA DE TU CARA.mp3",                           emoji: "🎶" },
+  { name: "Mis Sentimientos",       file: "008 Mis Sentimientos (feat. Ximena Sa.mp3",            emoji: "⚡" },
+  { name: "Disfrute engañarte",     file: "009 DISFRUTE ENGAÑARTE.mp3",                           emoji: "🎹" },
+  { name: "El general",             file: "12.-  EL GENERAL - gerardo ortiz.mp3",                 emoji: "🎤" },
+  { name: "Gano Holanda",           file: "14.- GANO HOLANDA, PERDIO CHINA - calibre 50.mp3",    emoji: "💿" },
+  { name: "Aguanta Corazon",        file: "25 aguanta corazon - los invasores de nuevo leon.mp3", emoji: "🎺" },
+  { name: "Hermosa Experiencia",    file: "026 HERMOSA EXPERIENCIA.mp3",                          emoji: "🎻" },
+  { name: "No hay Novedad",         file: "26 no hay novedad - cadetes.mp3",                      emoji: "🥁" },
+  { name: "Se quedaron a 3 pasos",  file: "30.- SE QUEDARON A TRES PASOS - calibre 50.mp3",      emoji: "🎷" },
+  { name: "Mi Razon de Ser",        file: "031 MI RAZON DE SER.mp3",                              emoji: "🌊" },
+  { name: "Mi ultimo Deseo",        file: "31.- MI ULTIMO DESEO - banda recoditos.mp3",           emoji: "🌙" },
+  { name: "Pongamonos de Acuerdo",  file: "063 PONGAMONOS DE ACUERDO.mp3",                       emoji: "☀️" },
+  { name: "Te hubieras ido antes",  file: "075 TE HUBIERAS IDO ANTES.mp3",                       emoji: "🎯" },
+  { name: "Tatuajes",               file: "090 TATUAJES.mp3",                                     emoji: "🚀" },
+  { name: "El Karma",               file: "114 EL KARMA.mp3",                                     emoji: "💫" },
+  { name: "El toro Encartado",      file: "118 EL TORO ENCARTADO.mp3",                           emoji: "🎭" },
+  { name: "La Vida Ruina",          file: "121 LA VIDA RUINA feat. Marca Regist.mp3",            emoji: "🌈" },
+  { name: "Vas a Llorar por mi",    file: "186 VAS A LLORAR POR MI.mp3",                         emoji: "❤️" },
+];
+ 
+var audio      = document.getElementById('audio');
+var songList   = document.getElementById('songList');
+var btnPlay    = document.getElementById('btnPlay');
+var btnPrev    = document.getElementById('btnPrev');
+var btnNext    = document.getElementById('btnNext');
+var btnShuffle = document.getElementById('btnShuffle');
+var btnRepeat  = document.getElementById('btnRepeat');
+var seekBar    = document.getElementById('seekBar');
+var volBar     = document.getElementById('volBar');
+var volIcon    = document.getElementById('volIcon');
+var curT       = document.getElementById('curT');
+var durT       = document.getElementById('durT');
+var npName     = document.getElementById('npName');
+var npNum      = document.getElementById('npNum');
+var artEmoji   = document.getElementById('artEmoji');
+var artWrap    = document.getElementById('artWrap');
+var modeLbl    = document.getElementById('modeLbl');
+ 
+var current = -1, playing = false, shuffle = false, repeat = 0;
+var durs = new Array(SONGS.length).fill(0);
+ 
+function renderList() {
+  songList.innerHTML = '';
+  SONGS.forEach(function(s, i) {
+    var div = document.createElement('div');
+    div.className = 'song-item' + (i===current?' active':'') + (i===current&&playing?' playing':'');
+    div.innerHTML =
+      '<div class="song-num"><span class="num-txt">' + (i+1) + '</span>' +
+      '<div class="mini-bars"><div class="mb"></div><div class="mb"></div><div class="mb"></div></div></div>' +
+      '<div class="song-info"><div class="song-name">' + s.name + '</div>' +
+      '<div class="song-sub">' + s.emoji + ' Pista ' + (i+1) + '</div></div>' +
+      '<div class="song-dur">' + (durs[i] ? fmt(durs[i]) : '—') + '</div>';
+    div.addEventListener('click', function(){ loadSong(i, true); });
+    songList.appendChild(div);
+  });
+}
+ 
+function loadSong(i, autoplay) {
+  current = i;
+  var s = SONGS[i];
+  audio.src = s.file;
+  audio.volume = volBar.value / 100;
+  npName.textContent = s.name;
+  npNum.textContent = 'Pista ' + (i+1) + ' de ' + SONGS.length;
+  artEmoji.textContent = s.emoji;
+  artWrap.classList.add('pulse');
+  if (autoplay) {
+    audio.play().then(function(){ playing=true; btnPlay.textContent='⏸'; renderList(); }).catch(function(){ renderList(); });
+  } else { renderList(); }
+}
+ 
+btnPlay.addEventListener('click', function() {
+  if (current === -1) { loadSong(0, true); return; }
+  if (playing) { audio.pause(); playing=false; btnPlay.textContent='▶'; artWrap.classList.remove('pulse'); }
+  else { audio.play(); playing=true; btnPlay.textContent='⏸'; artWrap.classList.add('pulse'); }
+  renderList();
+});
+ 
+function nextSong() {
+  if (repeat===2) { audio.currentTime=0; audio.play(); return; }
+  var idx = shuffle ? rnd() : (current+1) % SONGS.length;
+  if (idx===0 && !shuffle && repeat===0) { audio.pause(); playing=false; btnPlay.textContent='▶'; artWrap.classList.remove('pulse'); renderList(); return; }
+  loadSong(idx, true);
+}
+function prevSong() {
+  if (audio.currentTime > 3) { audio.currentTime=0; return; }
+  loadSong(shuffle ? rnd() : (current-1+SONGS.length) % SONGS.length, true);
+}
+btnNext.addEventListener('click', nextSong);
+btnPrev.addEventListener('click', prevSong);
+audio.addEventListener('ended', nextSong);
+function rnd() { var n; do { n=Math.floor(Math.random()*SONGS.length); } while(n===current&&SONGS.length>1); return n; }
+ 
+btnShuffle.addEventListener('click', function(){ shuffle=!shuffle; btnShuffle.classList.toggle('on',shuffle); updateMode(); });
+btnRepeat.addEventListener('click', function(){
+  repeat=(repeat+1)%3;
+  btnRepeat.textContent = repeat===2 ? '🔂' : '🔁';
+  btnRepeat.classList.toggle('on', repeat>0);
+  updateMode();
+});
+function updateMode() {
+  modeLbl.textContent = repeat===2 ? 'Repetir canción' : repeat===1 ? 'Repetir lista' : shuffle ? 'Modo aleatorio' : '';
+}
+ 
+audio.addEventListener('timeupdate', function() {
+  if (!audio.duration) return;
+  var p = audio.currentTime / audio.duration * 100;
+  seekBar.value = p; seekBar.style.setProperty('--v', p+'%');
+  curT.textContent = fmt(audio.currentTime);
+});
+audio.addEventListener('loadedmetadata', function() {
+  durT.textContent = fmt(audio.duration);
+  if (current>=0) { durs[current]=audio.duration; renderList(); }
+});
+seekBar.addEventListener('input', function() {
+  if (audio.duration) audio.currentTime = seekBar.value/100 * audio.duration;
+  seekBar.style.setProperty('--v', seekBar.value+'%');
+});
+volBar.addEventListener('input', function() {
+  audio.volume = volBar.value/100;
+  volBar.style.setProperty('--v', volBar.value+'%');
+  volIcon.textContent = volBar.value==0 ? '🔇' : volBar.value<50 ? '🔉' : '🔊';
+});
+volIcon.addEventListener('click', function(){ audio.muted=!audio.muted; volIcon.textContent=audio.muted?'🔇':'🔊'; });
+ 
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName==='INPUT') return;
+  if (!document.getElementById('musicSection').classList.contains('active')) return;
+  if (e.code==='Space') { e.preventDefault(); btnPlay.click(); }
+  if (e.code==='ArrowRight') audio.currentTime=Math.min(audio.duration||0,audio.currentTime+5);
+  if (e.code==='ArrowLeft')  audio.currentTime=Math.max(0,audio.currentTime-5);
+  if (e.code==='ArrowUp')    { volBar.value=Math.min(100,+volBar.value+5); volBar.dispatchEvent(new Event('input')); }
+  if (e.code==='ArrowDown')  { volBar.value=Math.max(0,+volBar.value-5);  volBar.dispatchEvent(new Event('input')); }
+});
+ 
+function fmt(s) {
+  if (!s||isNaN(s)) return '0:00';
+  return Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0');
+}
+renderList();
+ 
+/* ══════════════════════════════════════════════════════
+   JUEGO — ¿DE QUIÉN ES ESTA CANCIÓN?
+   Lee un fragmento de letra, elige el título correcto.
+   Tiene cronómetro de 15s, racha y puntuación.
+══════════════════════════════════════════════════════ */
+var GAME_DATA = [
+  {
+    song: "Oye Mujer",
+    lyric: "Oye mujer, tú que me tienes loco, que por ti no duermo ni un poco...",
+    hint: "Primera pista de la playlist",
+    emoji: "🎵"
+  },
+  {
+    song: "El Karma",
+    lyric: "El karma no falla, lo que haces te regresa, lo que sembraste cosechas...",
+    hint: "Banda MS · filosofía de vida",
+    emoji: "💫"
+  },
+  {
+    song: "Tatuajes",
+    lyric: "Traigo tatuajes que cubren mis heridas, cicatrices de amor en la piel grabadas...",
+    hint: "Calibre 50 · marcas en la piel",
+    emoji: "🚀"
+  },
+  {
+    song: "Hermosa Experiencia",
+    lyric: "Fue una hermosa experiencia haberte conocido, aunque el final no fue lo que esperaba...",
+    hint: "Éxito norteño de despedida",
+    emoji: "🎻"
+  },
+  {
+    song: "Mi Razon de Ser",
+    lyric: "Tú eres mi razón de ser, sin ti yo no soy nada, eres mi cielo, mi luna y mi mañana...",
+    hint: "Clásico de banda · declaración de amor",
+    emoji: "🌊"
+  },
+  {
+    song: "El General",
+    lyric: "Soy el general, el que manda aquí, nadie me detiene cuando voy por ti...",
+    hint: "Gerardo Ortiz · figura de poder",
+    emoji: "🎤"
+  },
+  {
+    song: "Aguanta Corazon",
+    lyric: "Aguanta corazón, ya llegará el momento, cuando el dolor se vaya con el viento...",
+    hint: "Invasores de Nuevo León · consuelo",
+    emoji: "🎺"
+  },
+  {
+    song: "La Vida Ruina",
+    lyric: "La vida me tiene en ruinas, todo lo que toqué se convirtió en ceniza...",
+    hint: "Con Marca Registrada · tragedia",
+    emoji: "🌈"
+  },
+  {
+    song: "Vas a Llorar por Mi",
+    lyric: "Vas a llorar por mí, lo sé muy bien, cuando me pierdas te vas a arrepentir...",
+    hint: "Balada norteña · advertencia",
+    emoji: "❤️"
+  },
+  {
+    song: "Mi Ultimo Deseo",
+    lyric: "Mi último deseo es verte una vez más, abrazarte fuerte y no soltarte jamás...",
+    hint: "Banda Recoditos · despedida",
+    emoji: "🌙"
+  },
+  {
+    song: "Pongamonos de Acuerdo",
+    lyric: "Pongámonos de acuerdo tú y yo, decidamos si seguimos o se acabó...",
+    hint: "Norteño clásico · negociación amorosa",
+    emoji: "☀️"
+  },
+  {
+    song: "Te Hubieras Ido Antes",
+    lyric: "Te hubieras ido antes de que te amara, antes de que mi vida te necesitara...",
+    hint: "Canción de desamor · demasiado tarde",
+    emoji: "🎯"
+  },
+  {
+    song: "Hombre Libre",
+    lyric: "Soy un hombre libre, ya no tengo cadenas, ya no lloro por ti ni me dan tus penas...",
+    hint: "Liberación · sin ataduras",
+    emoji: "🔥"
+  },
+  {
+    song: "Gano Holanda",
+    lyric: "Ganó Holanda, perdió China, así es el destino, nunca sabes lo que viene en el camino...",
+    hint: "Calibre 50 · metáfora futbolera",
+    emoji: "💿"
+  },
+  {
+    song: "Se Quedaron a Tres Pasos",
+    lyric: "Se quedaron a tres pasos de lograrlo, les faltó poquito para terminarlo...",
+    hint: "Calibre 50 · tan cerca y tan lejos",
+    emoji: "🎷"
+  },
+  {
+    song: "Disfrute Engañarte",
+    lyric: "Disfruté engañarte como tú me engañaste, pagué con la misma moneda que me diste...",
+    hint: "Venganza con elegancia",
+    emoji: "🎹"
+  },
+];
+ 
+var MAX_ROUNDS = 8;
+var TIMER_SEC  = 15;
+var gRound, gScore, gStreak, gCorrects, gCurrent, gTimer, gAnswered, gUsed;
+ 
+function initGame() {
+  gRound = 0; gScore = 0; gStreak = 0; gCorrects = 0; gUsed = [];
+  nextGameRound();
+}
+ 
+function nextGameRound() {
+  if (gRound >= MAX_ROUNDS) { showGameOver(); return; }
+  gRound++;
+  gAnswered = false;
+ 
+  var available = GAME_DATA.filter(function(_, i){ return gUsed.indexOf(i) === -1; });
+  if (available.length < 4) { gUsed = []; available = GAME_DATA.slice(); }
+ 
+  var idx = Math.floor(Math.random() * available.length);
+  var trueItem = available[idx];
+  gCurrent = trueItem;
+  gUsed.push(GAME_DATA.indexOf(trueItem));
+ 
+  var wrongs = GAME_DATA.filter(function(d){ return d.song !== trueItem.song; });
+  wrongs = shuffleArray(wrongs).slice(0, 3);
+  var options = shuffleArray([trueItem].concat(wrongs));
+ 
+  renderGame(trueItem, options);
+  startTimer();
+}
+ 
+function startTimer() {
+  clearInterval(gTimer);
+  var remaining = TIMER_SEC;
+  updateTimerRing(remaining, TIMER_SEC);
+  gTimer = setInterval(function() {
+    remaining--;
+    updateTimerRing(remaining, TIMER_SEC);
+    if (remaining <= 0) {
+      clearInterval(gTimer);
+      if (!gAnswered) timeOut();
+    }
+  }, 1000);
+}
+ 
+function updateTimerRing(val, max) {
+  var circle = document.getElementById('gTimerCircle');
+  var num    = document.getElementById('gTimerNum');
+  if (!circle || !num) return;
+  var r = 17;
+  var circ = 2 * Math.PI * r;
+  var offset = circ * (1 - val / max);
+  circle.style.strokeDashoffset = offset;
+  circle.style.stroke = val <= 5 ? '#e06060' : val <= 9 ? '#f0a020' : 'var(--accent)';
+  num.textContent = val;
+  num.style.color = val <= 5 ? '#e06060' : 'var(--accent)';
+}
+ 
+function renderGame(item, options) {
+  var body = document.getElementById('gameBody');
+  var progress = Math.round(((gRound - 1) / MAX_ROUNDS) * 100);
+  var streakTxt = gStreak >= 3 ? '🔥 Racha x' + gStreak + ' (+' + (gStreak >= 5 ? 5 : gStreak >= 4 ? 3 : 2) + ' pts bonus)' : gStreak >= 2 ? '⚡ Racha x' + gStreak : '';
+  var letters = ['A','B','C','D'];
+ 
+  var optsHTML = '';
+  options.forEach(function(opt, i) {
+    optsHTML += '<div class="g-opt" id="gopt' + i + '" onclick="chooseAnswer(\'' + opt.song.replace(/'/g,"\\'") + '\',' + i + ')">' +
+      '<span class="g-opt-letter">' + letters[i] + '</span>' +
+      '<span class="g-opt-text">' + opt.song + '</span>' +
+    '</div>';
+  });
+ 
+  var r = 17;
+  var circ = 2 * Math.PI * r;
+ 
+  body.innerHTML =
+    '<div class="g-progress-bar"><div class="g-progress-fill" style="width:' + progress + '%"></div></div>' +
+    '<div class="g-top">' +
+      '<div class="g-score">⭐ ' + gScore + ' pts</div>' +
+      '<div class="g-timer-ring">' +
+        '<svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="' + r + '" fill="none" stroke="var(--border)" stroke-width="3"/>' +
+        '<circle id="gTimerCircle" cx="22" cy="22" r="' + r + '" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"' +
+        ' stroke-dasharray="' + circ + '" stroke-dashoffset="0" style="transition:stroke-dashoffset .9s linear"/></svg>' +
+        '<div class="g-timer-num" id="gTimerNum">15</div>' +
+      '</div>' +
+      '<div class="g-round">Ronda ' + gRound + '/' + MAX_ROUNDS + '</div>' +
+    '</div>' +
+    '<div class="g-streak">' + streakTxt + '</div>' +
+    '<div class="g-lyric-card">' +
+      '<div class="g-lyric-label">🎶 Fragmento de letra</div>' +
+      '<div class="g-lyric-text">' + item.lyric + '</div>' +
+      '<div class="g-hint">💡 ' + item.hint + '</div>' +
+    '</div>' +
+    '<div class="g-options">' + optsHTML + '</div>' +
+    '<div class="g-feedback hidden" id="gFeedback"></div>' +
+    '<button class="g-next-btn hidden" id="gNextBtn" onclick="nextGameRound()">' +
+      (gRound < MAX_ROUNDS ? 'Siguiente ronda ›' : 'Ver resultado final') +
+    '</button>';
+}
+ 
+function chooseAnswer(chosen, optIdx) {
+  if (gAnswered) return;
+  gAnswered = true;
+  clearInterval(gTimer);
+ 
+  var correct = chosen === gCurrent.song;
+  var opts = document.querySelectorAll('.g-opt');
+  opts.forEach(function(o){ o.classList.add('locked'); o.onclick = null; });
+ 
+  var letters = ['A','B','C','D'];
+  opts.forEach(function(o, i) {
+    var txt = o.querySelector('.g-opt-text').textContent;
+    if (txt === gCurrent.song) o.classList.add('correct');
+    else if (i === optIdx && !correct) o.classList.add('wrong');
+  });
+ 
+  var fb = document.getElementById('gFeedback');
+  fb.classList.remove('hidden');
+ 
+  if (correct) {
+    gStreak++;
+    var bonus = gStreak >= 5 ? 5 : gStreak >= 4 ? 3 : gStreak >= 3 ? 2 : 0;
+    var pts = 10 + bonus;
+    gScore += pts;
+    gCorrects++;
+    fb.className = 'g-feedback correct';
+    fb.innerHTML = '✅ ¡Correcto!' + (bonus > 0 ? ' <strong>+' + bonus + ' bonus por racha ' + gStreak + 'x</strong>' : '') +
+      ' · Sumaste ' + pts + ' pts';
+  } else {
+    gStreak = 0;
+    fb.className = 'g-feedback wrong';
+    fb.innerHTML = '❌ Era: <strong>' + gCurrent.song + '</strong>';
+  }
+ 
+  var nb = document.getElementById('gNextBtn');
+  nb.classList.remove('hidden');
+  nb.textContent = gRound < MAX_ROUNDS ? 'Siguiente ronda ›' : 'Ver resultado final';
+}
+ 
+function timeOut() {
+  gAnswered = true;
+  gStreak = 0;
+  var opts = document.querySelectorAll('.g-opt');
+  opts.forEach(function(o){ o.classList.add('locked'); o.onclick = null; });
+  opts.forEach(function(o) {
+    if (o.querySelector('.g-opt-text').textContent === gCurrent.song) o.classList.add('correct');
+  });
+  var fb = document.getElementById('gFeedback');
+  fb.classList.remove('hidden');
+  fb.className = 'g-feedback wrong';
+  fb.innerHTML = '⏱ ¡Tiempo! Era: <strong>' + gCurrent.song + '</strong>';
+  var nb = document.getElementById('gNextBtn');
+  nb.classList.remove('hidden');
+  nb.textContent = gRound < MAX_ROUNDS ? 'Siguiente ronda ›' : 'Ver resultado final';
+}
+ 
+function showGameOver() {
+  clearInterval(gTimer);
+  var body = document.getElementById('gameBody');
+  var pct = Math.round((gCorrects / MAX_ROUNDS) * 100);
+  var stars = pct >= 90 ? '⭐⭐⭐' : pct >= 60 ? '⭐⭐' : '⭐';
+  var msg = pct >= 90 ? '🏆 ¡Experto en la playlist!' :
+            pct >= 60 ? '👍 ¡Buen oído!' : '🎸 ¡Sigue escuchando más!';
+ 
+  body.innerHTML =
+    '<div class="g-over">' +
+      '<div class="g-over-title">¡Juego terminado!</div>' +
+      '<div class="g-stars">' + stars + '</div>' +
+      '<div class="g-over-score">' + gScore + '</div>' +
+      '<div class="g-over-label">puntos totales</div>' +
+      '<div class="g-over-detail">' + gCorrects + ' de ' + MAX_ROUNDS + ' correctas · ' + pct + '%</div>' +
+      '<div class="g-over-msg">' + msg + '</div>' +
+      '<button class="g-restart-btn" onclick="initGame()">🔄 Jugar de nuevo</button>' +
+    '</div>';
+}
+ 
+function shuffleArray(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+ 
+/* ══════════════════════════════
+   QUIZ — MÚSICA MEXICANA MODERNA
+══════════════════════════════ */
+var QUIZ_QUESTIONS = [
+  { q:"¿Cuál es el verdadero nombre de Calibre 50?", emoji:"🎸",
+    opts:["Éric Mora y Édgar Quintero","Gerardo Ortiz y El Komander","Banda MS y Grupo Firme","Los Yonics"],
+    ans:0, exp:"Calibre 50 fue fundado por Éric Mora y Édgar Quintero en 2010 en Sinaloa." },
+  { q:"¿De qué estado de México es originaria la Banda MS?", emoji:"🥁",
+    opts:["Jalisco","Sonora","Sinaloa","Chihuahua"],
+    ans:2, exp:"Banda MS es de Mazatlán, Sinaloa, formada en 2003." },
+  { q:"¿Qué canción de Grupo Firme fue viral en 2021 con más de mil millones de reproducciones?", emoji:"🔥",
+    opts:["Ya Supérame","El Toro Encartado","Mujeriego","El Roto"],
+    ans:0, exp:"'Ya Supérame' fue un mega hit viral de Grupo Firme en 2021." },
+  { q:"¿Qué artista popularizó el 'corrido tumbado' mezclando trap y regional?", emoji:"🎤",
+    opts:["Peso Pluma","Natanael Cano","Junior H","El Fantasma"],
+    ans:1, exp:"Natanael Cano fue el pionero del 'corrido tumbado' fusionando trap con norteño." },
+  { q:"¿Cuál es la canción más conocida de Christian Nodal sobre desamor?", emoji:"💔",
+    opts:["No Te Contaron Mal","Botella tras Botella","Aquí Abajo","De Los Besos Que Te Di"],
+    ans:0, exp:"'No Te Contaron Mal' es uno de los éxitos más conocidos de Christian Nodal." },
+  { q:"¿En qué año Peso Pluma lanzó 'El Belicón' con Natanael Cano?", emoji:"📅",
+    opts:["2019","2020","2022","2023"],
+    ans:2, exp:"'El Belicón' fue lanzada en 2022 y catapultó la carrera de Peso Pluma." },
+  { q:"¿Cuántos integrantes fundadores tiene Grupo Firme?", emoji:"🎶",
+    opts:["3","5","6","8"],
+    ans:2, exp:"Grupo Firme fue fundado en Tijuana con 6 integrantes originales." },
+  { q:"¿Qué artista grabó 'La Bebe (Remix)' con Yng Lvcas llegando al #1 mundial en Spotify?", emoji:"🌍",
+    opts:["Junior H","Natanael Cano","Peso Pluma","El Comandante"],
+    ans:2, exp:"Peso Pluma y Yng Lvcas con 'La Bebe (Remix)' llegaron al #1 en Spotify Global en 2023." },
+  { q:"¿Cuál banda de Mazatlán tiene canciones como 'Ojos Que No Ven'?", emoji:"🎺",
+    opts:["Banda El Recodo","Banda MS","Banda Recoditos","Los Tucanes de Tijuana"],
+    ans:0, exp:"Banda El Recodo es la banda más antigua y famosa de Mazatlán, Sinaloa." },
+  { q:"¿Cómo se llama el género que mezcla norteño con hip-hop urbano popularizado por Natanael Cano?", emoji:"🎧",
+    opts:["Banda electrónica","Corrido tumbado","Ranchera trap","Norteño pop"],
+    ans:1, exp:"El 'corrido tumbado' es la fusión de corridos norteños con trap/hip-hop que Natanael Cano popularizó." },
+];
+ 
+var qIndex, qScore, qOrder;
+ 
+function initQuiz() {
+  qIndex = 0; qScore = 0;
+  qOrder = shuffleArray(makeRange(QUIZ_QUESTIONS.length)).slice(0, 10);
+  renderQuiz();
+}
+ 
+function makeRange(n) {
+  var arr = []; for (var i=0; i<n; i++) arr.push(i); return arr;
+}
+ 
+function renderQuiz() {
+  var body = document.getElementById('quizBody');
+  if (!body) return;
+  if (qIndex >= qOrder.length) { showQuizResults(); return; }
+  var q = QUIZ_QUESTIONS[qOrder[qIndex]];
+  var progress = Math.round((qIndex / qOrder.length) * 100);
+  var letters = ['A','B','C','D'];
+  var optsHTML = '';
+  for (var i=0; i<q.opts.length; i++) {
+    optsHTML += '<button class="quiz-opt" onclick="answerQuiz(' + i + ')">' +
+      '<span class="opt-letter">' + letters[i] + '</span>' + q.opts[i] + '</button>';
+  }
+  body.innerHTML =
+    '<div class="quiz-progress-wrap">' +
+      '<div class="quiz-progress-row"><span>Pregunta ' + (qIndex+1) + ' de ' + qOrder.length + '</span>' +
+      '<span class="quiz-score-pill">✅ ' + qScore + ' pts</span></div>' +
+      '<div class="quiz-bar-bg"><div class="quiz-bar-fill" style="width:' + progress + '%"></div></div>' +
+    '</div>' +
+    '<div class="quiz-question-card">' +
+      '<div class="quiz-q-num">Pregunta ' + (qIndex+1) + '</div>' +
+      '<span class="quiz-q-emoji">' + q.emoji + '</span>' +
+      '<div class="quiz-q-text">' + q.q + '</div>' +
+    '</div>' +
+    '<div class="quiz-options" id="quizOpts">' + optsHTML + '</div>' +
+    '<div id="quizFeedback"></div>';
+}
+ 
+function answerQuiz(chosen) {
+  var q = QUIZ_QUESTIONS[qOrder[qIndex]];
+  var opts = document.querySelectorAll('.quiz-opt');
+  for (var i=0; i<opts.length; i++) { opts[i].classList.add('disabled'); opts[i].onclick = null; }
+  var correct = (chosen === q.ans);
+  if (correct) { opts[chosen].classList.add('correct'); qScore++; }
+  else { opts[chosen].classList.add('wrong'); opts[q.ans].classList.add('correct'); }
+  var btnLabel = (qIndex+1 < qOrder.length) ? 'Siguiente pregunta ›' : 'Ver resultados';
+  document.getElementById('quizFeedback').innerHTML =
+    '<div class="quiz-feedback ' + (correct?'correct':'wrong') + '">' + (correct?'✅ ':'❌ ') + q.exp + '</div>' +
+    '<button class="quiz-next-btn" onclick="nextQuestion()">' + btnLabel + '</button>';
+}
+ 
+function nextQuestion() { qIndex++; renderQuiz(); }
+ 
+function showQuizResults() {
+  var body = document.getElementById('quizBody');
+  var pct = Math.round((qScore / qOrder.length) * 100);
+  var rank = pct>=90 ? '🏆 Maestro Musical' : pct>=70 ? '🎸 Fanático Nivel Pro' : pct>=50 ? '🎵 Aficionado Melódico' : '🌱 Aprendiz Musical';
+  body.innerHTML =
+    '<div class="quiz-results">' +
+      '<div class="quiz-results-title">¡Quiz completado!</div>' +
+      '<div class="quiz-results-score">' + qScore + '</div>' +
+      '<div class="quiz-results-total">de ' + qOrder.length + ' correctas · ' + pct + '%</div>' +
+      '<div class="quiz-rank">' + rank + '</div>' +
+      '<button class="quiz-restart-btn" onclick="initQuiz()">🔄 Jugar de nuevo</button>' +
+    '</div>';
+}
+</script>
+</body>
+</html>
